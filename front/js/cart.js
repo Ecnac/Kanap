@@ -1,11 +1,4 @@
 // ========== INSERTION DES ARTICLES ==========
-
-// Récupération des données de l'API
-fetch('http://localhost:3000/api/products/')
-  .then((response) => response.json())
-  .then(() => insertElements(cart))
-  .catch(() => console.log('Aucun élément à afficher'));
-
 // Déclaration des variables
 const cartTotalQuantity = document.getElementById('totalQuantity');
 const cartTotalPrice = document.getElementById('totalPrice');
@@ -13,7 +6,7 @@ const cartTotalPrice = document.getElementById('totalPrice');
 // Récupère le panier dans le local storage et le stocke dans une variable
 const cart = JSON.parse(localStorage.getItem('cart'));
 
-// Fonction permettant d'ajouter les éléments dans le HTML
+// Fonction permettant d'insérer les éléments du panier dans le HTML
 const insertElements = (cart) => {
   for (let i = 0; i < cart.length; i++) {
     document.querySelector('#cart__items').innerHTML += 
@@ -39,55 +32,67 @@ const insertElements = (cart) => {
                     </div>
                 </article>`;
   }
+  quantitySelection();
+  getDeleteButton();
   totalUpdate();
 };
-
-
 
 // ========== GESTION DE LA QUANTITE ==========
 
 // Fonction permettant de mettre à jour la quantité totale et le prix total des articles du panier
-const totalUpdate = () => {
-
+function totalUpdate () {
   // Déclaration des variables
   let totalQuantity = 0;
   let totalPrice = 0;
 
-  // Boucle pour définir la quantité totale de produits
   cart.forEach((product) => {
+    // Récupère la quantité de chaque produit et l'ajoute à la quantité totale
     totalQuantity += parseInt(product.quantity);
     totalPrice += product.price * product.quantity;
   });
-  // Affiche le prix et la quantité de produits
+
+  // Affiche la quantité totale et le prix total dans le HTML
   cartTotalQuantity.innerText = totalQuantity;
   cartTotalPrice.innerText = totalPrice;
 };
 
-//* Récupère tous les éléments avec la classe .itemQuantity
-//  Ajoute une écoute à la modification sur les éléments */
 const quantitySelection = () => {
+  // Récupère les éléments de la classe itemQuantity et les stocke dans une variable
   const quantitySelector = document.querySelectorAll('.itemQuantity');
+
+  // Pour chaque élément de la classe itemQuantity, ajoute un écouteur d'évènement sur le changement de valeur
   quantitySelector.forEach((input) =>
     input.addEventListener('change', handleQuantityInput)
   );
 };
 
-//* Fonction gérant la modification de quantité
-//  Récupère l'ID et la couleur de l'élément avec le data-id correspondant puis réattribue la quantité */
 const handleQuantityInput = (e) => {
+  // Récupère l'ID et la couleur de l'élément avec le data-id correspondant puis réattribue la quantité
   const selectItem = e.target.closest('[data-id]');
   const { id, color } = selectItem.dataset;
-  const quantity = e.target.value;
+  let quantity = Number(e.target.value);
+
+  if (quantity <= 0 || quantity > 100) {
+    // Si la quantité est inférieure ou égale à 0 ou supérieure à 100, affiche un message d'erreur
+    alert('Veuillez entrer une quantité entre 1 et 100');
+    e.target.value = 1;
+    quantity = 1;
+  }
+
+  // Change la quantité de l'élément dans le panier
   changeCartItemQuantity({ id, color, quantity });
+
+  // Met à jour le prix total
   totalUpdate();
 };
 
 const changeCartItemQuantity = ({ id, color, quantity }) => {
-  // Récupère l'index de l'objet du panier et retourne son ID et sa couleur puis réattribue la quantité
+  // Récupère l'index de l'élément dans le panier
   const itemIndex = cart.findIndex((i) => i.id == id && i.color == color);
+
+  // Change la quantité de l'élément dans le panier
   cart[itemIndex].quantity = quantity;
 
-  // Crée un nouveau tableau à partir de l'ancien avec les nouvelles valeurs puis l'ajoute au local storage
   const newCart = cart.map((item) => ({
     id: item.id,
     color: item.color,
@@ -97,29 +102,20 @@ const changeCartItemQuantity = ({ id, color, quantity }) => {
     img: item.img,
     alt: item.alt,
   }));
+
+  // Met à jour le panier dans le local storage
   localStorage.setItem('cart', JSON.stringify(newCart));
 };
-
-
-
 
 // ========== SUPPRESSION D'ARTICLES ==========
 
 const deleteItem = ({ id, color }) => {
-  // Récupère l'index de l'objet du panier, retourne son ID et sa couleur, puis le supprime du panier
+  // Récupère l'index de l'élément dans le panier
   const itemIndex = cart.findIndex((i) => i.id == id && i.color == color);
+  // Supprime l'élément du panier
   cart.splice(itemIndex, 1);
 
-  // Crée un nouveau tableau à partir de l'ancien avec les nouvelles valeurs puis l'ajoute au local storage
-  /*const newCart = cart.map((item) => ({
-    id: item.id,
-    color: item.color,
-    price: item.price,
-    quantity: item.quantity,
-    name: item.name,
-    img: item.img,
-    alt: item.alt,
-  }));*/
+  // Met à jour le panier dans le local storage
   localStorage.setItem('cart', JSON.stringify(cart));
 
   // Ajoute un délai pour afficher l'alerte après la suppresion des éléments visuels
@@ -127,8 +123,7 @@ const deleteItem = ({ id, color }) => {
 };
 
 const handleDeleteButton = (e) => {
-  //*  Récupère l'ID et la couleur de l'élément avec le data-id correspondant
-  //   Supprime l'élement HTML correspondant
+  // Récupère l'ID et la couleur de l'élément avec le data-id correspondant puis supprime l'élément
   const selectItem = e.target.closest('[data-id]');
   const { id, color } = selectItem.dataset;
 
@@ -140,8 +135,10 @@ const handleDeleteButton = (e) => {
 
 // Récupère les boutons de suppression d'article et ajoute une écoute des clicks
 const getDeleteButton = () => {
+  // Récupère les éléments de la classe deleteItem et les stocke dans une variable
   const deleteButton = document.querySelectorAll('.deleteItem');
   deleteButton.forEach((button) =>
+    // Pour chaque élément de la classe deleteItem, ajoute un écouteur d'évènement sur le click
     button.addEventListener('click', handleDeleteButton)
   );
 };
@@ -154,153 +151,182 @@ const formLastName = document.getElementById('lastName');
 let lastNameIsValid = false;
 const formAddress = document.getElementById('address');
 let addressIsValid = false;
-const formCity = document.getElementById('city')
+const formCity = document.getElementById('city');
 let cityIsValid = false;
 const formMail = document.getElementById('email');
 let mailIsValid = false;
 
 // ========== REGEXP ==========
-
+// Déclaration des expressions régulières
 const nameReg = /^[a-z '-]+$/i;
 const mailReg = /^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$/;
 
 // First Name
 const firstNameErr = document.getElementById('firstNameErrorMsg');
 const validateFirstName = () => {
-    formFirstName.addEventListener('change', function (e) {
-        if (formFirstName.innerText = e.target.value.match(nameReg)) {
-            firstNameIsValid = true;
-            firstNameErr.innerText = "";
-        } else {
-            firstNameErr.innerText = "Saisie du prénom invalide";
-            firstNameIsValid = false;
-        }
-    }); 
+  // Vérifie si la valeur du champ firstName correspond à l'expression régulière
+  formFirstName.addEventListener('change', function (e) {
+    // Si la valeur du champ firstName correspond à l'expression régulière, la variable firstNameIsValid passe à true
+    if ((formFirstName.innerText = e.target.value.match(nameReg))) {
+      firstNameIsValid = true;
+      firstNameErr.innerText = '';
+    }
+    // Sinon, la variable firstNameIsValid passe à false et affiche un message d'erreur
+    else {
+      firstNameErr.innerText =
+        'Saisie du prénom invalide, seuls les lettres, les espaces, les apostrophes et les tirets sont autorisés';
+      firstNameIsValid = false;
+    }
+  });
 };
 
 // Last Name
 const lastNameErr = document.getElementById('lastNameErrorMsg');
 const validateLastName = () => {
-    formLastName.addEventListener('change', function (e) {
-        if (formLastName.innerText = e.target.value.match(nameReg)) {
-            lastNameIsValid = true;
-            lastNameErr.innerText = "";
-        } else {
-            lastNameErr.innerText = "Saisie du nom invalide";
-            lastNameIsValid = false;
-        }
-    }); 
+  // Vérifie si la valeur du champ lastName correspond à l'expression régulière
+  formLastName.addEventListener('change', function (e) {
+    // Si la valeur du champ lastName correspond à l'expression régulière, la variable lastNameIsValid passe à true
+    if ((formLastName.innerText = e.target.value.match(nameReg))) {
+      lastNameIsValid = true;
+      lastNameErr.innerText = '';
+    }
+    // Sinon, la variable lastNameIsValid passe à false et affiche un message d'erreur
+    else {
+      lastNameErr.innerText =
+        'Saisie du nom invalide , seuls les lettres, les espaces, les apostrophes et les tirets sont autorisés';
+      lastNameIsValid = false;
+    }
+  });
 };
 
 // Address
 const addressErr = document.getElementById('addressErrorMsg');
 const validateAddress = () => {
-    formAddress.addEventListener('change', function (e) {
-        if (e.target.value !== "") {
-            addressIsValid = true;
-            addressErr.innerText = "";
-        } else {
-            addressErr.innerText = "Saisie de l'adresse invalide";
-            addressIsValid = false;
-        }
-    });
+  // Vérifie si la valeur du champ address correspond à l'expression régulière
+  formAddress.addEventListener('change', function (e) {
+    // Si la valeur du champ address correspond à l'expression régulière, la variable addressIsValid passe à true
+    if (e.target.value !== '') {
+      addressIsValid = true;
+      addressErr.innerText = '';
+    }
+    // Sinon, la variable addressIsValid passe à false et affiche un message d'erreur
+    else {
+      addressErr.innerText = "Saisie de l'adresse invalide";
+      addressIsValid = false;
+    }
+  });
 };
 
 // City
 const cityErr = document.getElementById('cityErrorMsg');
 const validateCity = () => {
-    formCity.addEventListener('change', function (e) {
-        if (formCity.innerText = e.target.value.match(nameReg)) {
-            cityIsValid = true;
-            cityErr.innerText = "";
-        } else {
-            cityErr.innerText = "Saisie de la ville invalide";
-            cityIsValid = false;
-        }
-    }); 
+  // Vérifie si la valeur du champ city correspond à l'expression régulière
+  formCity.addEventListener('change', function (e) {
+    // Si la valeur du champ city correspond à l'expression régulière, la variable cityIsValid passe à true
+    if ((formCity.innerText = e.target.value.match(nameReg))) {
+      cityIsValid = true;
+      cityErr.innerText = '';
+    }
+    // Sinon, la variable cityIsValid passe à false et affiche un message d'erreur
+    else {
+      cityErr.innerText =
+        'Saisie de la ville invalide , seuls les lettres, les espaces, les apostrophes et les tirets sont autorisés';
+      cityIsValid = false;
+    }
+  });
 };
 
 // Email
 const emailErr = document.getElementById('emailErrorMsg');
 const validateEmail = () => {
-    formMail.addEventListener('change', function (e) {
-        if (formMail.innerText = e.target.value.match(mailReg)) {
-            mailIsValid = true;
-            emailErr.innerText = "";
-        } else {
-            emailErr.innerText = "Saisie de l'addresse email invalide";
-            mailIsValid
-        }
-    }); 
+  // Vérifie si la valeur du champ email correspond à l'expression régulière
+  formMail.addEventListener('change', function (e) {
+    // Si la valeur du champ email correspond à l'expression régulière, la variable mailIsValid passe à true
+    if ((formMail.innerText = e.target.value.match(mailReg))) {
+      mailIsValid = true;
+      emailErr.innerText = '';
+    }
+    // Sinon, la variable mailIsValid passe à false et affiche un message d'erreur
+    else {
+      emailErr.innerText = "Saisie de l'addresse email invalide";
+      mailIsValid;
+    }
+  });
 };
 
-const checkForm = (e) => {
-    e.preventDefault();
-    if (firstNameIsValid && lastNameIsValid && addressIsValid && cityIsValid && mailIsValid) {
-        createOrder();
-    } else {
-        alert('Veuillez remplir le formulaire correctement');
-    }
-}
+const checkOrder = (e) => {
+  e.preventDefault();
+  // Si toutes les variables sont à true, on envoie la commande
+  if (
+    firstNameIsValid &&
+    lastNameIsValid &&
+    addressIsValid &&
+    cityIsValid &&
+    mailIsValid &&
+    cart.length > 0
+  ) {
+    createOrder();
+  }
+  // Sinon, on affiche un message d'erreur
+  else {
+    alert(
+      'Veuillez remplir le formulaire ou ajouter des articles au panier avant de valider votre commande'
+    );
+  }
+};
 
 // ========== CREATION DE LA COMMANDE ==========
 
 const createOrder = () => {
-
-    // Création de l'objet contact
-    let contact = {
-        firstName: formFirstName.value,
-        lastName: formLastName.value,
-        address: formAddress.value,
-        city: formCity.value,
-        email: formMail.value
-    };
-    let products = cart.flatMap((item) => item.id);
-    let order = JSON.stringify({contact, products});
-    postOrder(order);
-
-}
+  // Création de l'objet contact
+  let contact = {
+    firstName: formFirstName.value,
+    lastName: formLastName.value,
+    address: formAddress.value,
+    city: formCity.value,
+    email: formMail.value,
+  };
+  // Création de l'objet products
+  let products = cart.flatMap((item) => item.id);
+  let order = JSON.stringify({ contact, products });
+  // Envoi de la commande
+  postOrder(order);
+};
 
 // Récupération de l'élément "order" et ajout de l'écoute sur le clic
-const orderButton = document.getElementById("order");
-orderButton.addEventListener('click', checkForm);
-
+const orderButton = document.getElementById('order');
+orderButton.addEventListener('click', checkOrder);
 
 // ========== POST DE LA COMMANDE ==========
 const postOrder = (order) => {
-
-const options = {
+  const options = {
     method: 'POST',
     body: order,
     headers: {
-        'Content-Type': 'application/json'
-    }
-};
+      'Content-Type': 'application/json',
+    },
+  };
 
-// Envoi de la requête POST
-fetch('http://localhost:3000/api/products/order', options)
-    .then(res => res.json())
-    .then(res => redirection(res));
-    console.log(order)
-    
+  // Envoi de la commande
+  fetch('http://localhost:3000/api/products/order', options)
+    .then((res) => res.json())
+    .then((res) => redirection(res));
+  console.log(order);
 };
 
 // Récupération de l'ID de la commande et redirection vers la page de confirmation
-function redirection (res) {
-  let orderId = res.orderId
+function redirection(res) {
+  let orderId = res.orderId;
   localStorage.clear(cart);
-  window.location.replace("http://127.0.0.1:5500/front/html/confirmation.html?order=" + orderId);
-};
+  window.location.replace(
+    'http://127.0.0.1:5500/front/html/confirmation.html?order=' + orderId
+  );
+}
 
 // ========== APPEL DES FONCTIONS ==========
+insertElements(cart);
 
-
-// Ajoute un délai avant l'exécution des fonctions pour permettre la récupération des valeurs
-setTimeout(function () {
-  quantitySelection();
-  getDeleteButton();
-}, 300);
-
+// Appel des fonctions de validation
 validateFirstName();
 validateLastName();
 validateAddress();

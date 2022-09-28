@@ -1,6 +1,6 @@
 // Création de la page du produit
 
-// Création de l'URL en utilisant l'ID de l'article
+// Récupère l'ID du produit
 let url = new URL(window.location.href);
 let productId = url.searchParams.get('id');
 
@@ -11,12 +11,13 @@ const articleName = document.getElementById('title');
 const articlePrice = document.getElementById('price');
 const articleDesc = document.getElementById('description');
 
-// Récupération des données de l'API correspondant à l'ID
+// Appel de l'API
 fetch('http://localhost:3000/api/products/' + productId)
   .then((response) => response.json())
   .then((data) => insertData(data))
   .catch(() => console.log('Une erreur est survenue'));
 
+// Fonction permettant d'insérer les données de l'article
 function insertData(data) {
   // Insertion de l'image
   articleImg.src = data.imageUrl;
@@ -36,7 +37,7 @@ function insertData(data) {
   data.colors.forEach((color) => colorSelection(color));
 }
 
-// Déclaration de la fonction permettant d'insérer les éléments de choix de couleur de l'article
+// Fonction permettant de créer les options de couleur
 function colorSelection(color) {
   const colorSection = document.getElementById('colors');
   const colorPick = document.createElement('option');
@@ -51,21 +52,22 @@ function colorSelection(color) {
 const productQuantity = document.getElementById('quantity');
 const getButton = document.getElementById('addToCart');
 
+// Fonction permettant d'ajouter un article au panier
 const addToCart = ({ id, color, quantity }) => {
-  // Récupère le panier dans le local storage ou crée un array
+  // Récupère les données du panier
   let cart = JSON.parse(localStorage.getItem('cart')) || [];
 
-  // Récupère l'index de l'objet du panier et retourne son ID et sa couleur
+  // Vérifie si l'article est déjà dans le panier
   const productIndex = cart.findIndex((i) => i.id == id && i.color == color);
 
   if (productIndex !== -1) {
-    // Détermine la quantité totale en fonction de la quantité indexée et de la quantité à ajouter
+    // Si l'article est déjà dans le panier, ajoute la quantité
     let totalQuantity = cart[productIndex].quantity + quantity;
 
     // Modifie la quantité indexée par le total à ajouter
     cart[productIndex].quantity = totalQuantity;
   } else {
-    // Ajoute le produit au panier
+    // Si l'article n'est pas dans le panier, ajoute le produit
     cart.push({
       id: productId,
       color,
@@ -77,12 +79,14 @@ const addToCart = ({ id, color, quantity }) => {
     });
   }
 
+  // Met à jour le panier
   localStorage.setItem('cart', JSON.stringify(cart));
 };
 
-// Gestion de l'ajout au panier
+// Fonction permettant de récupérer les données de l'article
 const submitButton = () => {
   try {
+    // Récupère les données de l'article
     let quantity = parseInt(productQuantity.value);
     const color = document.getElementById('colors').value;
 
@@ -97,14 +101,11 @@ const submitButton = () => {
       throw 'Veuillez sélectionner entre 1 et 100 articles';
     }
 
+    // Ajoute l'article au panier
     addToCart({
       id: productId,
       color,
       quantity,
-      price: articlePrice.innerText,
-      name: articleName.innerText,
-      img: articleImg.src,
-      alt: articleImg.alt,
     });
 
     // Notifie l'utilisateur que le panier a été mis à jour
@@ -114,4 +115,5 @@ const submitButton = () => {
   }
 };
 
+// Ajoute un écouteur d'événement au bouton "Ajouter au panier"
 getButton.addEventListener('click', submitButton);

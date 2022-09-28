@@ -1,4 +1,4 @@
-// Création de l'URL en utilisant le numéro de commande
+// Récupération du numéro de commande
 let url = new URL(window.location.href);
 let orderNumber = url.searchParams.get('order');
 
