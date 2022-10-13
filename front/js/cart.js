@@ -1,4 +1,11 @@
 // ========== INSERTION DES ARTICLES ==========
+
+const getDataFromAPI = async () => {
+  const response = await fetch('http://localhost:3000/api/products');
+  const data = await response.json();
+  return data;
+};
+
 // Déclaration des variables
 const cartTotalQuantity = document.getElementById('totalQuantity');
 const cartTotalPrice = document.getElementById('totalPrice');
@@ -7,18 +14,25 @@ const cartTotalPrice = document.getElementById('totalPrice');
 const cart = JSON.parse(localStorage.getItem('cart'));
 
 // Fonction permettant d'insérer les éléments du panier dans le HTML
-const insertElements = (cart) => {
-  for (let i = 0; i < cart.length; i++) {
+const insertElements = (cart, data) => {
+  for (let i = 0, j = 0 ; i < cart.length; i++, j++) {
+
+    const kanap = data.findIndex((index) => index._id == cart[i].id);
+    const kanapPrice = data[kanap].price;
+    const kanapImg = data[kanap].imageUrl;
+    const kanapAlt = data[kanap].altTxt;
+    const kanapName = data[kanap].name;
+    
     document.querySelector('#cart__items').innerHTML += 
                 `<article class="cart__item" data-id="${cart[i].id}" data-color="${cart[i].color}">
                     <div class="cart__item__img">
-                        <img src="${cart[i].img}" alt="${cart[i].alt}">
+                        <img src="${kanapImg}" alt="${kanapAlt}">
                     </div>
                     <div class="cart__item__content">
                         <div class="cart__item__content__description">
-                            <h2>${cart[i].name}</h2>
+                            <h2>${kanapName}</h2>
                             <p>${cart[i].color}</p>
-                            <p>${cart[i].price}€</p>
+                            <p>${kanapPrice}€</p>
                         </div>
                         <div class="cart__item__content__settings">
                             <div class="cart__item__content__settings__quantity">
@@ -39,22 +53,27 @@ const insertElements = (cart) => {
 
 // ========== GESTION DE LA QUANTITE ==========
 
-// Fonction permettant de mettre à jour la quantité totale et le prix total des articles du panier
-function totalUpdate () {
-  // Déclaration des variables
+function totalUpdate() {
   let totalQuantity = 0;
   let totalPrice = 0;
 
-  cart.forEach((product) => {
-    // Récupère la quantité de chaque produit et l'ajoute à la quantité totale
-    totalQuantity += parseInt(product.quantity);
-    totalPrice += product.price * product.quantity;
-  });
+  // Récupère les éléments de la classe itemQuantity et les stocke dans une variable
+  const quantitySelector = document.querySelectorAll('.itemQuantity');
 
-  // Affiche la quantité totale et le prix total dans le HTML
-  cartTotalQuantity.innerText = totalQuantity;
-  cartTotalPrice.innerText = totalPrice;
-};
+  // Pour chaque élément de la classe itemQuantity, modifie la quantité totale et le prix total
+  getDataFromAPI().then((data) => {
+    quantitySelector.forEach((input) => {
+      const kanap = data.findIndex((index) => index._id == input.closest('[data-id]').dataset.id);
+      const kanapPrice = data[kanap].price;
+
+      totalQuantity += Number(input.value);
+      totalPrice += Number(input.value) * kanapPrice;
+    });
+    cartTotalQuantity.textContent = totalQuantity;
+    cartTotalPrice.textContent = totalPrice;
+  });
+}
+
 
 const quantitySelection = () => {
   // Récupère les éléments de la classe itemQuantity et les stocke dans une variable
@@ -96,11 +115,7 @@ const changeCartItemQuantity = ({ id, color, quantity }) => {
   const newCart = cart.map((item) => ({
     id: item.id,
     color: item.color,
-    price: item.price,
     quantity: item.quantity,
-    name: item.name,
-    img: item.img,
-    alt: item.alt,
   }));
 
   // Met à jour le panier dans le local storage
@@ -112,7 +127,6 @@ const changeCartItemQuantity = ({ id, color, quantity }) => {
 const deleteItem = ({ id, color }) => {
   // Récupère l'index de l'élément dans le panier
   const itemIndex = cart.findIndex((i) => i.id == id && i.color == color);
-  // Supprime l'élément du panier
   cart.splice(itemIndex, 1);
 
   // Met à jour le panier dans le local storage
@@ -324,7 +338,7 @@ function redirection(res) {
 }
 
 // ========== APPEL DES FONCTIONS ==========
-insertElements(cart);
+getDataFromAPI().then((data) => {insertElements(cart, data)});
 
 // Appel des fonctions de validation
 validateFirstName();

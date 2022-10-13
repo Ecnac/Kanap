@@ -10,6 +10,7 @@ const articleImg = document.createElement('img');
 const articleName = document.getElementById('title');
 const articlePrice = document.getElementById('price');
 const articleDesc = document.getElementById('description');
+let cart = [];
 
 // Appel de l'API
 fetch('http://localhost:3000/api/products/' + productId)
@@ -55,7 +56,7 @@ const getButton = document.getElementById('addToCart');
 // Fonction permettant d'ajouter un article au panier
 const addToCart = ({ id, color, quantity }) => {
   // Récupère les données du panier
-  let cart = JSON.parse(localStorage.getItem('cart')) || [];
+  cart = JSON.parse(localStorage.getItem('cart')) || [];
 
   // Vérifie si l'article est déjà dans le panier
   const productIndex = cart.findIndex((i) => i.id == id && i.color == color);
@@ -71,11 +72,7 @@ const addToCart = ({ id, color, quantity }) => {
     cart.push({
       id: productId,
       color,
-      price: articlePrice.innerText,
       quantity,
-      name: articleName.innerText,
-      img: articleImg.src,
-      alt: articleImg.alt,
     });
   }
 
